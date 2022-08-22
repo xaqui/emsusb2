@@ -30,30 +30,61 @@ from time import sleep
 import pywinusb.hid as hid
 import win32api
 import win32com.client
+import win32ui
+import win32con
 import win32gui
 import win32process
 import re
 
+keyBuffer = [[],[]]
+
+
+PAD1_CODE = {'start':0x0D, #'enter'
+       'select':0x08, #'backspace'
+       'left':0x25, #'left_arrow'
+       'up':0x26, #'up arrow'
+       'right':0x27, #right arrow
+       'down':0x28, #down arrow
+       'upleft':0x41, # 'a'
+       'upright':0x42, # 'b'
+       'dnleft':0x43, #'c'
+       'dnright':0x44} #'d'
+
+PAD2_CODE = {'start':0xDB, # '['
+        'select':0xDD, #']'
+        #'numpad_0':0x60,
+        'dnleft':0x61, # 'numpad_1'
+        'down':0x62, # 'numpad_2'
+        'dnright':0x63, # 'numpad_3'
+        'left':0x64, # 'numpad_4'
+        #'numpad_5':0x65, # 'numpad_5'
+        'right':0x66, # 'numpad_6'
+        'upleft':0x67, # 'numpad_7'
+        'up':0x68, # 'numpad_8'
+        'upright':0x69}  # 'numpad_9'
+mapping = [PAD1_CODE, PAD2_CODE]
+
 def sample_handler(data):
     signal = data.data
-    #print(signal)
+    pressed = []
+    joy = signal[0]
     if signal[1] != 0 or signal[2] != 0:
-        pressed = []
         #print("Button!")
-        joy = signal[0]
         if signal[1] != 0:
             pressed.extend(angle_dirs(signal[1]))
         if signal[2] != 0:
             pressed.extend(card_dirs(signal[2]))
-        #print (pressed)
         button_mapper(joy, pressed)
+    if joy==1:
+        print(signal)
+    button_cleanup(joy,pressed)
     #print("Raw data: {0}".format(data))
 
 
 def card_dirs(value):
     dirval = {128:'left', 64:'down', 32:'right', 16:'up', 2:'start', 1:'select' }
     pressed = []
-    for key in reversed(sorted(dirval.iterkeys())):
+    for key in reversed(sorted(dirval.keys())):
         if value >= key:
             pressed.append(dirval[key])
             value -= key
@@ -62,47 +93,39 @@ def card_dirs(value):
 def angle_dirs(value):
     dirval = {8:'dnright', 4:'upleft', 2:'upright', 1:'dnleft' }
     pressed = []
-    for key in reversed(sorted(dirval.iterkeys())):
+    for key in reversed(sorted(dirval.keys())):
         if value >= key:
             pressed.append(dirval[key])
             value -= key
     return pressed
 
+def get_inner_windows(whndl):
+    def callback(hwnd, hwnds):
+        if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
+            hwnds[win32gui.GetClassName(hwnd)] = hwnd
+        return True
+    hwnds = {}
+    win32gui.EnumChildWindows(whndl, callback, hwnds)
+    return hwnds
 
 def button_mapper(joy, pressed):
     # do I want to hard code this???
-    PAD1_CODE = {'start':0x0D, #'enter'
-           'select':0x1B, #'esc'
-           'left':0x25, #'left_arrow'
-           'up':0x26, #'up arrow'
-           'right':0x27, #right arrow
-           'down':0x28, #down arrow
-           'upleft':0x41, # 'a'
-           'upright':0x42, # 'b'
-           'dnleft':0x43, #'c'
-           'dnright':0x44} #'d'
-
-    PAD2_CODE = {'start':0xDB, # '['
-            'select':0xDD, #']'
-            #'numpad_0':0x60,
-            'dnleft':0x61, # 'numpad_1'
-            'down':0x62, # 'numpad_2'
-            'dnright':0x63, # 'numpad_3'
-            'left':0x64, # 'numpad_4'
-            #'numpad_5':0x65, # 'numpad_5'
-            'right':0x66, # 'numpad_6'
-            'upleft':0x67, # 'numpad_7'
-            'up':0x68, # 'numpad_8'
-            'upright':0x69}  # 'numpad_9'
-    mapping = [PAD1_CODE, PAD2_CODE]
+    # TODO: add customizable settings
     tmp = 1
+    shell = win32com.client.Dispatch("WScript.Shell")
     for val in pressed:
-        shell = win32com.client.Dispatch("WScript.Shell")
-        tmp = 1
+        if not (val in keyBuffer[joy-1]):
+            print("joy ",joy," signal added - ",val)
+            keyBuffer[joy-1].append(val)
+            win32api.keybd_event(mapping[joy-1][val],0,0,0)
 
-        #win32api.keybd_event(mapping[joy][val],0,0,0)
-        #sleep(.05)
-        #win32api.keybd_event(mapping[joy][val],0 ,win32con.KEYEVENTF_KEYUP ,0)
+
+def button_cleanup(joy, pressed):
+    for val in keyBuffer[joy-1]:
+        if not (val in pressed):
+            print("joy ",joy," signal removed - ",val," list was ",pressed)
+            keyBuffer[joy-1].remove(val)
+            win32api.keybd_event(mapping[joy-1][val],0 ,win32con.KEYEVENTF_KEYUP ,0)
 
 
 def detect_device():
@@ -134,7 +157,7 @@ def pad_init():
             sleep(0.0001)
         return
     else:
-        print "No EMS USB2 device detected. Exiting"
+        print("No EMS USB2 device detected. Exiting")
         sys.exit(1)
 
 
@@ -187,6 +210,6 @@ if __name__ == '__main__':
         # allow to show encoded strings
         import codecs
         sys.stdout = codecs.getwriter('mbcs')(sys.stdout)
-
-        pad_init()
+        
+    pad_init()
     #raw_test()
