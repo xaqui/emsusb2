@@ -25,6 +25,6 @@ The script takes the usb input and hard-codes it to keyboard keys using the foll
 The original purpose of this script might have been to use dance mats with StepMania, and even though the script works as intended most of the time, StepMania still won't pick up the keypresses generated from the script, for some reason. Most other software tested does work as intended.
 
 ## Credits
-[tb2097](https://github.com/tb2097): Original author
-[iluminacos](https://github.com/iluminacos): Collaborator
-[xaqui](https://github.com/xaqui): Collaborator
+* [tb2097](https://github.com/tb2097): Original author
+* [iluminacos](https://github.com/iluminacos): Collaborator
+* [xaqui](https://github.com/xaqui): Collaborator
