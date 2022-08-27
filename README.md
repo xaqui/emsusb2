@@ -22,7 +22,8 @@ The script takes the usb input and hard-codes it to keyboard keys using the foll
 * You might need [EMS USB2 drivers](http://www.hkems.com/product/ps2/ps2-usb2.htm)
 
 ## Known issues
-The original purpose of this script might have been to use dance mats with StepMania, and even though the script works as intended most of the time, StepMania still won't pick up the keypresses generated from the script, for some reason. Most other software tested does work as intended.
+Older software sometimes struggles picking inputs from both players, if at all. Unfortunately this has to be fixed on a per case basis, since we haven't found any recurring or common problems.
+If the USB device is disconnected during execution the program has to be launched again to resume picking up inputs. 
 
 ## Credits
 * [tb2097](https://github.com/tb2097): Original author
